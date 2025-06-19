@@ -1,96 +1,124 @@
-## 📄 `main.py`
+# 🌡️ Raspberry Pi Temperature & Undervoltage Monitor
 
-```python
-#!/usr/bin/env python3
-import time
-import subprocess
-from rich.console import Console
-from rich.live import Live
-from rich.panel import Panel
+![Python](https://img.shields.io/badge/Python-3.x-blue?logo=python&style=flat-square)
+![Platform](https://img.shields.io/badge/Platform-Raspberry--Pi-green?logo=raspberry-pi&style=flat-square)
+![License](https://img.shields.io/badge/License-GNU%20GPL-red?logo=gnu&style=flat-square)
 
-console = Console()
+> A simple, elegant terminal tool to monitor CPU temperature and undervoltage warnings on your Raspberry Pi, using Python and [`rich`](https://github.com/Textualize/rich).  
+> Built with ❤️ by [@islamux](https://github.com/islamux)
 
-TEMP_THRESHOLD = 70  # درجة الحرارة التي يعتبر بعدها الجهاز ساخنًا جدًا
+---
 
-# ✅ فحص درجة الحرارة من النظام
-def get_cpu_temperature():
-    try:
-        with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
-            temp_str = f.readline()
-        return float(temp_str) / 1000
-    except FileNotFoundError:
-        return None
+## 🚀 Features
 
-# ✅ فحص الجهد المنخفض عبر vcgencmd
-def check_undervoltage():
-    try:
-        result = subprocess.check_output(['vcgencmd', 'get_throttled']).decode().strip()
-        if "0x0" in result:
-            return "⚡ Voltage: [green]Normal[/green]"
-        else:
-            return f"⚡ Voltage: [bold red]Warning![/bold red] ({result})"
-    except Exception as e:
-        return f"⚡ Voltage: [yellow]Unknown[/yellow] ({e})"
+- 🌡️ Live temperature monitoring with color-coded alerts
+- 🔌 Real-time undervoltage detection via `vcgencmd`
+- 🎨 Beautiful terminal UI with [Rich](https://github.com/Textualize/rich)
+- 🔊 Terminal sound alert when overheating
+- 🐍 Lightweight & perfect for headless Pis (no GUI required)
 
-# ✅ إعداد واجهة العرض
-def make_panel(temp):
-    voltage_status = check_undervoltage()
-    status = "🔥 [bold red]Overheating![/bold red]" if temp >= TEMP_THRESHOLD else "✅ [green]Normal[/green]"
-    panel = Panel(
-        f"🌡️ [bold]CPU Temperature:[/bold] {temp:.2f}°C\n"
-        f"{voltage_status}\n\n"
-        f"{status}",
-        title="Raspberry Pi Temp Monitor",
-        border_style="red" if temp >= TEMP_THRESHOLD else "cyan"
-    )
-    return panel
+---
 
-# ✅ تنبيه صوتي بسيط
-def beep():
-    print('\a', end='', flush=True)  # يصدر beep في الطرفية إذا كانت مدعومة
+## 📷 Preview
 
-# ✅ الحلقة الرئيسية
-def main():
-    with Live(console=console, refresh_per_second=1) as live:
-        while True:
-            temp = get_cpu_temperature()
-            if temp is not None:
-                if temp >= TEMP_THRESHOLD:
-                    beep()
-                live.update(make_panel(temp))
-            else:
-                live.update(Panel("🚫 [red]Temperature sensor not found![/red]", title="Error"))
-            time.sleep(1)
+```shell
++---------------------------------------------+
+|     Raspberry Pi Temp Monitor               |
++---------------------------------------------+
+| 🌡️ CPU Temperature: 68.24°C                  |
+| 🔴 Undervoltage detected now!               |
+| 🕓 Undervoltage has occurred before         |
+|                                            |
+| 🔥 Overheating!                             |
++---------------------------------------------+
+````
 
-if __name__ == "__main__":
-    main()
+---
+
+## 📦 Requirements
+
+* Python 3.x
+* `vcgencmd` command (usually pre-installed on Raspberry Pi OS)
+* [`rich`](https://pypi.org/project/rich/)
+
+Install dependencies:
+
+```bash
+pip install rich
+sudo apt install libraspberrypi-bin
 ```
 
 ---
 
-## 🧰 خطوات التشغيل:
+## 🧪 How to Use
 
-1. تأكد من تثبيت `rich`:
+```bash
+git clone https://github.com/islamux/temp-monitor-raspberrypi4.git
+cd temp-monitor-raspberrypi4
 
-   ```bash
-   pip install rich
-   ```
+# (Optional) Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-2. اجعل الملف قابلًا للتنفيذ:
+# Install requirements
+pip install -r requirements.txt
 
-   ```bash
-   chmod +x main.py
-   ```
-
-3. ثم شغله:
-
-   ```bash
-   ./main.py
-   ```
+# Run the monitor
+python main.py
+```
 
 ---
 
-## 🔐 ملاحظة أمان:
+## 📂 File Structure
 
-* تأكد أن `vcgencmd` متاح (عادة يكون مرفقًا مع Raspbian).
-* لو ظهرت مشكلة في أمر الجهد، أخبرني لأعطيك بديل عبر `dmesg`.
+```
+temp-monitor-raspberrypi4/
+├── main.py               # Main script (real-time monitor)
+├── requirements.txt      # Dependencies (rich)
+└── README.md             # Project info
+```
+
+---
+
+## 🧠 How It Works
+
+* `main.py` reads the CPU temp from `/sys/class/thermal/thermal_zone0/temp`
+
+* It calls `vcgencmd get_throttled` and decodes the hex response like:
+
+  * `0x0` → No issues
+  * `0x50000` → Past undervoltage detected
+  * `0x50005` → Current and past undervoltage/throttling
+
+* Displays user-friendly messages like:
+
+  * 🔴 Undervoltage detected!
+  * 🕓 Undervoltage has occurred before
+  * 🐢 Currently throttled
+
+---
+
+## 📜 License
+
+This project is licensed under the **GNU General Public License**.
+Free as in freedom 🐧
+Read more: [https://www.gnu.org/licenses/gpl-3.0.html](https://www.gnu.org/licenses/gpl-3.0.html)
+
+---
+
+## ✨ Author
+
+**[@islamux](https://github.com/islamux)**
+💻 Muslim Developer • Linux Terminal Lover • Open Source Enthusiast
+🕊️ "وَمَا أَرْسَلْنَاكَ إِلَّا رَحْمَةً لِّلْعَالَمِينَ" – الأنبياء 107
+*Using technology to spread peace and benefit all of humanity.*
+
+---
+
+## ☁️ Future Ideas
+
+* Logging temperature and undervoltage events to a file
+* Display historical graph (CLI-based)
+* Integration with MQTT / push notifications
+
+```
